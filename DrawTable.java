@@ -13,6 +13,7 @@ import com.onlyoffice.integration.utils.RestResponse;
 import com.onlyoffice.integration.utils.SheetToPicture;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.list.TreeList;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.usermodel.Font;
 import org.apache.poi.ss.util.CellRangeAddress;
@@ -37,6 +38,7 @@ import java.util.List;
 
 import static com.onlyoffice.integration.convert.DrawFromExcel.isInMerged;
 import static java.lang.Thread.sleep;
+import static org.apache.poi.ss.usermodel.CellType.STRING;
 
 
 @RestController
@@ -72,17 +74,20 @@ public class DrawTable {
                         List<RowRenderData> renderDataList = new TreeList<>();
                         for (int i = 0; i < sheet.getPhysicalNumberOfRows(); i++) {
                             CellRenderData[] rowData = new CellRenderData[sheet.getRow(0).getPhysicalNumberOfCells()];
-                            withList.add(sheet.getColumnWidthInPixels(i));
                             float high = 0;
+                            withList.clear();
                             for (int j = 0; j < sheet.getRow(0).getPhysicalNumberOfCells(); j++) {
                                 //if (sheet.getRow(i) != null && sheet.getRow(i).getCell(j) != null) {
                                     // 设置文本
+
+                                    withList.add(j, sheet.getColumnWidthInPixels(j));
                                     String strCell;
                                     Cell cell = sheet.getRow(i).getCell(j);
                                     if(sheet.getRow(i+1) != null) {
                                         high = sheet.getRow(i + 1).getHeightInPoints() - sheet.getRow(i).getHeightInPoints();
                                     }
-                                    CellStyle cs = cell.getCellStyle();
+                                cell.setCellType(STRING);
+                                CellStyle cs = cell.getCellStyle();
                                     CellType cellType = cell.getCellType();
                                     switch (cellType) {
                                         case STRING:
@@ -184,8 +189,13 @@ public class DrawTable {
                         borderStyle1.setSize(2);
                         borderStyle1.setType(XWPFTable.XWPFBorderType.SINGLE);
                         int width1 = withList.stream().mapToInt(Float::intValue).sum();
+                        double[] doubleArray = new double[withList.size()];
+                        for(int i = 0; i < withList.size(); i++) {
+                            doubleArray[i] = withList.get(i) * 0.026 ;
+                        }
+
                         log.info("width1 {}", width1);
-                        put(migration.getLable(), Tables.of(tableRows).percentWidth("80%", null).mergeRule(rule).center().border(borderStyle1).create());
+                        put(migration.getLable(), Tables.of(tableRows).width(width1*0.026, doubleArray).mergeRule(rule).center().border(borderStyle1).create());
 
 
                     }
